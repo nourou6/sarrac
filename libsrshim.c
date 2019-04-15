@@ -989,6 +989,10 @@ void exit(int status)
    in some process traces, saw that exit wasn't being called, only exit_group.
    added this, but it didn't solve the problem, so removing for now...
 
+   got a case reported 2019/03/10, so putting it back...
+
+ */
+
 void exit_group(int status)
 {
     static exit_fn exit_group_fn_ptr = NULL;
@@ -1004,7 +1008,6 @@ void exit_group(int status)
     // do it for real.
     exit_group_fn_ptr(status);
 }
- */
 
 int link(const char *target, const char* linkpath) 
 {
