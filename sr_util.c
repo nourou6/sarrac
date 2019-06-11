@@ -15,6 +15,7 @@
 #include <linux/limits.h>
 
 #include "sr_util.h"
+#include "sr_config.h"
 
 time_t logbase;
 int logfd = STDERR_FILENO;
@@ -317,6 +318,9 @@ unsigned char sumhash[SR_SUMHASHLEN];
 int get_sumhashlen(char algo)
 {
 	switch (algo) {
+	case 'a':
+		/* max header length minus 3 chars for algo char, comma, and terminating \0 */
+		return (AMQP_MAX_SS - 3);
 	case 'd':
 	case 'n':
 		return (MD5_DIGEST_LENGTH + 1);
@@ -338,14 +342,15 @@ int get_sumhashlen(char algo)
 	}
 }
 
-char *set_sumstr(char algo, char algoz, const char *fn, const char *partstr,
-		 char *linkstr, unsigned long block_size,
+char *set_sumstr(char algo, char algoz, const char *sum_preset, const char *fn,
+		 const char *partstr, char *linkstr, unsigned long block_size,
 		 unsigned long block_count, unsigned long block_rem,
 		 unsigned long block_num, int xattr_cc)
  /* 
     return a correct sumstring (assume it is big enough)  as per sr_post(7)
     algo = 
     '0' - no checksum, value is random. -> now same as N.
+    'a' - arbitrary checksum, set sum to provided value (sum_preset)
     'd' - md5sum of block.
     'n' - md5sum of filename (fn).
     'L' - now sha512 sum of link value.
@@ -399,6 +404,13 @@ char *set_sumstr(char algo, char algoz, const char *fn, const char *partstr,
 
 	case '0':
 		sprintf(sumstr, "%c,%03ld", algo, random() % 1000);
+		break;
+
+	case 'a' :
+		sumstr[0] = algo;
+		sumstr[1] = ',';
+		strncpy(&sumstr[2], sum_preset, get_sumhashlen('a'));
+		sumstr[AMQP_MAX_SS] = '\0';
 		break;
 
 	case 'd':
@@ -572,7 +584,7 @@ int hexchr2nibble(char c)
 
 unsigned char *sr_sumstr2hash(const char *s)
 {
-	int i;
+	int i, len;
 	if (!s)
 		return (NULL);
 	memset(sumhash, 0, SR_SUMHASHLEN);
@@ -582,8 +594,9 @@ unsigned char *sr_sumstr2hash(const char *s)
 		sumhash[1] = s[2];
 		return (sumhash);
 	}
-
-	for (i = 1; (i < get_sumhashlen(s[0])); i++) {
+	len = (s[0] == 'a') ? strnlen(s, get_sumhashlen('a')) : get_sumhashlen(s[0]);
+	
+	for (i = 1; i < len; i++) {
 		sumhash[i] =
 		    (unsigned char)((hexchr2nibble(s[i << 1]) << 4) +
 				    hexchr2nibble(s[(i << 1) + 1]));
@@ -593,7 +606,7 @@ unsigned char *sr_sumstr2hash(const char *s)
 
 char *sr_hash2sumstr(const unsigned char *h)
 {
-	int i;
+	int i, len;
 	memset(sumstr, 0, SR_SUMSTRLEN);
 	sumstr[0] = h[0];
 	sumstr[1] = ',';
@@ -603,8 +616,9 @@ char *sr_hash2sumstr(const unsigned char *h)
 		sumstr[3] = '\0';;
 		return (sumstr);
 	}
+	len = (h[0] == 'a') ? strnlen((const char *) h, get_sumhashlen('a')) : get_sumhashlen(h[0]);
 
-	for (i = 1; i < get_sumhashlen(h[0]); i++) {
+	for (i = 1; i < len; i++) {
 		sumstr[i * 2] = nibble2hexchr(h[i] >> 4);
 		sumstr[i * 2 + 1] = nibble2hexchr(h[i]);
 	}

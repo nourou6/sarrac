@@ -71,6 +71,7 @@ void daemonize(int close_stdout);
    return a correct sumstring (assume it is big enough)  as per sr_post(7)
    algo = 
      '0' - no checksum, value is random. -> now same as N.
+     'a' - arbitrary checksum, set sum to provided value (sum_preset)
      'd' - md5sum of block.
      'n' - md5sum of filename (fn).
      'L' - now sha512 sum of link value.
@@ -89,8 +90,8 @@ int get_sumhashlen(char algo);
  return the length of the hash buffer (which includes the 1 char prefix for the type.
   */
 
-char *set_sumstr(char algo, char algoz, const char *fn, const char *partstr,
-		 char *linkstr, unsigned long block_size,
+char *set_sumstr(char algo, char algoz, const char *sum_preset, const char *fn,
+		 const char *partstr, char *linkstr, unsigned long block_size,
 		 unsigned long block_count, unsigned long block_rem,
 		 unsigned long block_num, int xattr_cc);
 
