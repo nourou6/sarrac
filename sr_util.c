@@ -319,8 +319,8 @@ int get_sumhashlen(char algo)
 {
 	switch (algo) {
 	case 'a':
-		/* max header length minus 3 chars for algo char, comma, and terminating \0 */
-		return (AMQP_MAX_SS - 3);
+		/* using max possible length */
+		return (SHA512_DIGEST_LENGTH + 1);
 	case 'd':
 	case 'n':
 		return (MD5_DIGEST_LENGTH + 1);
@@ -409,8 +409,7 @@ char *set_sumstr(char algo, char algoz, const char *sum_preset, const char *fn,
 	case 'a' :
 		sumstr[0] = algo;
 		sumstr[1] = ',';
-		strncpy(&sumstr[2], sum_preset, get_sumhashlen('a'));
-		sumstr[AMQP_MAX_SS] = '\0';
+		strncpy(&sumstr[2], sum_preset, SR_SUMSTRLEN - 3);
 		break;
 
 	case 'd':
