@@ -410,6 +410,7 @@ char *set_sumstr(char algo, char algoz, const char *sum_preset, const char *fn,
 		sumstr[0] = algo;
 		sumstr[1] = ',';
 		strncpy(&sumstr[2], sum_preset, SR_SUMSTRLEN - 3);
+		sumstr[SR_SUMSTRLEN - 1] = '\0';
 		break;
 
 	case 'd':
